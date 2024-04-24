@@ -45,6 +45,7 @@ if [ -n "${changed_files}" ]; then
         -DUSE_HARFBUZZ=1 \
         -DUSE_FRIBIDI=1 \
         -DUSE_LIBUNIBREAK=1 \
+        -DUSE_BREAK_SA=1 \
         -DUSE_UTF8PROC=1 \
         -DUSE_NANOSVG=1 \
         -DALLOW_KERNING=1 \

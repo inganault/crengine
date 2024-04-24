@@ -35,6 +35,10 @@
 #include <fribidi.h>
 #endif
 
+#if (USE_BREAK_SA==1)
+#include "../include/linebreak_sa.h"
+#endif
+
 #define SPACE_WIDTH_SCALE_PERCENT 100
 #define MIN_SPACE_CONDENSING_PERCENT 50
 #define UNUSED_SPACE_THRESHOLD_PERCENT 5
@@ -430,6 +434,11 @@ public:
     bool m_has_cjk; // true when some CJK met
     int  m_cjk_prev_line_added_space_div; // Used with CJK justified lines, to
     int  m_cjk_prev_line_added_space_mod; // apply same spacing on last line.
+    
+    #if (USE_BREAK_SA==1)
+    int  m_sa_chunk_start; // -1 means no ongoing SA (South East Asian) chunk
+    int  m_sa_chunk_end;
+    #endif
 
 // These are not unicode codepoints: these values are put where we
 // store text indexes in the source text node.
@@ -471,6 +480,7 @@ public:
         m_has_cjk = false;
         m_cjk_prev_line_added_space_div = 0;
         m_cjk_prev_line_added_space_mod = 0;
+        m_sa_chunk_start = -1;
         m_specified_para_dir = REND_DIRECTION_UNSET;
         #if (USE_FRIBIDI==1)
             m_bidi_ctypes = NULL;
@@ -1187,6 +1197,9 @@ public:
                             else
                                 m_flags[pos-1] &= ~LCHAR_ALLOW_WRAP_AFTER;
                         }
+                        #if (USE_BREAK_SA==1)
+                        scanSABreak(&lbCtx, -1);
+                        #endif
                     #else
                         m_flags[pos] |= LCHAR_ALLOW_WRAP_AFTER;
                     #endif
@@ -1210,6 +1223,9 @@ public:
                             else
                                 m_flags[pos-1] &= ~LCHAR_ALLOW_WRAP_AFTER;
                         }
+                        #if (USE_BREAK_SA==1)
+                        scanSABreak(&lbCtx, -1);
+                        #endif
                     #else
                         m_flags[pos] |= LCHAR_ALLOW_WRAP_AFTER;
                     #endif
@@ -1558,6 +1574,10 @@ public:
                         }
                     #endif
 
+                    #if (USE_BREAK_SA==1)
+                    scanSABreak(&lbCtx, pos);
+                    #endif
+
                     m_charindex[pos] = k;
                     m_srcs[pos] = src;
                     pos++;
@@ -1713,6 +1733,9 @@ public:
             //   RTL at start with later some LTR: par_type 273 , max_level 3  1111111111112222222222222221
             */
         }
+        #endif
+        #if (USE_BREAK_SA==1)
+        scanSABreak(&lbCtx, -1);
         #endif
     }
 
@@ -4686,6 +4709,40 @@ public:
                  c == 0x0022 || c == 0x0027 || c == 0x0023; // Ascii " ' #
 
     }
+
+    #if (USE_BREAK_SA==1)
+    void scanSABreak(struct LineBreakContext *lbCtx, int pos) {
+        // pos = -1 to force end SA chunk
+        bool is_sa = false;
+        if (pos == -1) {
+            // printf("scanSABreak END\n");
+        } else {
+            is_sa = lb_get_char_class(lbCtx, m_text[pos]) == LBP_SA;
+            // printf("scanSABreak <%x> @ %d SA=%d\n", m_text[pos], pos, (int)is_sa);
+        }
+        if (is_sa) {
+            if (m_sa_chunk_start == -1) {
+                m_sa_chunk_start = pos;
+            }
+            m_sa_chunk_end = pos;
+        } else {
+            if (m_sa_chunk_start != -1) {
+                m_sa_chunk_end += 1;
+                // printf("BreakSALine from %d to %d\n", m_sa_chunk_start, m_sa_chunk_end);
+                BreakSALine(m_text, m_sa_chunk_start, m_sa_chunk_end, &foundSABreak, (void*)this);
+                m_sa_chunk_start = -1;
+            }
+        }
+    }
+
+    static void foundSABreak(void* _self, int32_t pos) {
+        LVFormatter &self = *(LVFormatter*)_self;
+        // printf("foundSABreak @%d\n", pos);
+        if (pos == self.m_sa_chunk_start || pos == self.m_sa_chunk_end)
+            return;
+        self.m_flags[pos-1] |= LCHAR_ALLOW_WRAP_AFTER;
+    }
+    #endif
 
     /// Split paragraph into lines
     void processParagraph( int start, int end, bool isLastPara )
