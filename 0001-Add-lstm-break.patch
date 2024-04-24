@@ -1,0 +1,39 @@
+From 124a455b1a6e813e9f4c445c02f5fa737e67e01c Mon Sep 17 00:00:00 2001
+From: inganault <p.po.oo.on.n@gmail.com>
+Date: Thu, 25 Apr 2024 02:31:24 +0700
+Subject: [PATCH 1/1] Add lstm break
+
+---
+ thirdparty/kpvcrlib/CMakeLists.txt  | 3 +++
+ thirdparty/kpvcrlib/crsetup.h.cmake | 1 +
+ 2 files changed, 4 insertions(+)
+
+diff --git a/thirdparty/kpvcrlib/CMakeLists.txt b/thirdparty/kpvcrlib/CMakeLists.txt
+index 76023a75..19160f55 100644
+--- a/thirdparty/kpvcrlib/CMakeLists.txt
++++ b/thirdparty/kpvcrlib/CMakeLists.txt
+@@ -114,6 +114,9 @@ set (CRENGINE_SOURCES
+     ${CRE_DIR}/src/hist.cpp
+     ${CRE_DIR}/src/cri18n.cpp
+     ${CRE_DIR}/src/crconcurrent.cpp
++    ${CRE_DIR}/src/linebreak/lstm_data.c
++    ${CRE_DIR}/src/linebreak/lstmbe.cpp
++    ${CRE_DIR}/src/linebreak/linebreak_sa.cpp
+ )
+ add_library(crengine STATIC ${CRENGINE_SOURCES})
+ # Make sure we get full `constexpr` support.
+diff --git a/thirdparty/kpvcrlib/crsetup.h.cmake b/thirdparty/kpvcrlib/crsetup.h.cmake
+index be92fbe2..23aab13c 100644
+--- a/thirdparty/kpvcrlib/crsetup.h.cmake
++++ b/thirdparty/kpvcrlib/crsetup.h.cmake
+@@ -77,6 +77,7 @@
+ #define USE_FRIBIDI                          1
+ #define USE_HARFBUZZ                         1
+ #define USE_LIBUNIBREAK                      1
++#define USE_BREAK_SA                         1
+ #define USE_UTF8PROC                         1
+ 
+ #endif//CRSETUP_H_INCLUDED
+-- 
+2.44.0
+
